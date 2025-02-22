@@ -7,36 +7,148 @@ date: "2025-02-22"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-imdb_movies <- read_csv("~/Desktop/Hackathon-Project/imdb_top_1000.csv")
+imdb_movies <- read_csv("~/Desktop/Hackathon-Project2025/imdb_top_1000.csv")
+
 ```
 
 # Introduction
 
-The main goal of a movie poster is to hook an audience into the idea of the movie. It goes without saying then that different genres may have different strategies 
+The main goal of a movie poster is to hook an audience into the idea of the movie. It goes without saying then that different genres may have different strategies in grabbing the attention of their corresponding audience. One of the first thing that comes to your attention when you see a poster is the color. Family movies, for example, may frequently use lighter colors or higher RGB values, while horror films may use darker colors as to illicit an eerie feeling from just the poster.
+
+In this project, we are using the posters of the top 1000 rated movies on IMDB, mapping those movies to the respective percentages of each color in that poster. With this information, we can make conclusions about the types of colors that different genres of movies use to attract their audience and perhaps even make some assumptions about why movies chose these colors.
+
+# Background
+
+We collected this data from <a href = "https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows?resource=download">Kaggle.com</a> and it was initially compiled straight from the IMDB database 4 years ago.
+
+From this dataset, we will be using the following variable:
+
+<ul>
+
+<li>**Genre**: A list of Genres that corresponds to each movie. We will mutate this to only include the first genre, being the strongest corresponding genre</li>
+
+<li>**Poster_Link**: Link to a jpeg file of the poster of the corresponding movie. We used this to create a program returning the percentages of each color used in the poster</li>
+
+</ul>
+
+# Mapping Color from JPEG
+
+# Visualization
+
+
+
+```{r}
+
+generate_percentages <- function() {
+  values <- runif(3)
+  percentages <- values / sum(values) * 100
+  return(percentages)
+}
+
+imdb_movies[c("Red", "Green", "Blue")] <- t(replicate(nrow(imdb_movies), generate_percentages()))
+
+
+imdb_movies <- imdb_movies %>%
+  mutate(Genres = as.character(Genre)) %>%
+  separate(Genres, into = c("First_Genre", "Rest"), sep = ",", extra = "drop", fill = "right")
+
+imdb_movies <- imdb_movies %>% select("First_Genre", "Red", "Green", "Blue", "Series_Title")
+
+imdb_movies %>% group_by(First_Genre) %>% summarize(avg_red = mean(Red), avg_green = mean(Green), avg_blue = mean(Blue))
+```
+
+light blue, middle blue, dark blue,
+
+```{r}
+
+color_avg <- imdb_movies %>%
+  group_by(First_Genre) %>%
+  summarize(avg_red = mean(Red), 
+            avg_green = mean(Green), 
+            avg_blue = mean(Blue)) %>%
+  pivot_longer(cols = c(avg_red, avg_green, avg_blue), 
+               names_to = "Color", 
+               values_to = "Average_Value")
+
+color_mapping <- c("avg_red" = "red", "avg_green" = "green", "avg_blue" = "blue")
+
+ggplot(color_avg, aes(x = First_Genre, y = Average_Value, fill = Color)) +
+  geom_col(position = "dodge") +  scale_fill_manual(values = color_mapping) + 
+  labs(title = "Average RGB Values by Genre", x = "Genre", y = "Average Color Value") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+color_val <- imdb_movies %>%
+  pivot_longer(cols = c(Red, Green, Blue), 
+               names_to = "Color", 
+               values_to = "Value")
+
+color_mapping <- c("Red" = "red", "Green" = "green", "Blue" = "blue")
+
+
+color_val %>%
+  filter(Series_Title == "The Dark Knight") %>% 
+  ggplot(aes(x = Color, y = Value, fill = Color)) + 
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  geom_text(aes(label = paste0(round(Value, 1), "%")), 
+            position = position_stack(vjust = 0.5)) + 
+  scale_fill_manual(values = color_mapping) + coord_polar(theta = "y") +
+  labs(title = "Color Distribution for The Dark Knight", 
+       x = "Color", y = "Value") +
+  theme_minimal()
+
+color_val %>%
+  filter(Series_Title == "The Dark Knight") %>% plot_ly(df, labels = ~Category, values = ~Value, type = 'pie', textinfo = 'percent', 
+        text = ~paste0(Category, ": ", round(Value, 1), "%"), 
+        marker = list(colors = RColorBrewer::brewer.pal(5, "Set3"))) %>%
+  layout(
+    title = "Movie Genre Distribution",  # Title for the pie chart
+    showlegend = TRUE  # Display the legend
+  )
+```
+
+```{r}
+test_movie <- data.frame("Spider-Man": 4, "Red": 5)
+
+test_movie
+```
 
 ```{python}
 import pandas as pd
+import matplotlib.pyplot as plt
 
-imdb_movies_python = pd.read_csv("~/Desktop/Hackathon-Project/imdb_top_1000.csv")
+data = {'Movie Title': ['Spider-Man'],
+        'Red': [45],
+        'Green': [23],
+        'Blue': [32]}
 
-imdb_movies_python
+df = pd.DataFrame(data)
+
+colors = ['red', 'green', 'blue']
+df_row = df.iloc[0, 1:]
+
+df_row
+
+plt.figure(figsize=(6, 6))
+plt.pie(df_row, labels=df_row.index, colors=colors, autopct='%1.1f%%', startangle=90)
+
+
+plt.title(f"RGB Color Distribution for {df['Movie Title'][0]}")
+
+plt.show()
+
 ```
 
-
-```{r}
-imdb_movies
+```{sql connection=imdb_movies_python}
+select * from imdb_movies_python
 ```
 
-```{r}
-
-```
-
-```{python}
-
-```
-
-```{sql connection=}
-
-```
+$$
+\Delta C = \sqrt{(rij - rk)^2+(gij-gk)^2 + (bij-bk)^2}
+$$
 
 ## 
