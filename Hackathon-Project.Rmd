@@ -62,7 +62,6 @@ fake_movies_long <- pivot_longer(fake_movies,
 fake_movies_long
 ```
 
-
 ```{r}
 fake_movies <- imdb_movies %>% group_by(First_Genre) %>% summarize(Red = mean(Red), Green = mean(Green), Blue = mean(Blue))
 
@@ -80,26 +79,8 @@ anova_blue <- aov(Percentage ~ First_Genre, data = long_data[long_data$Color == 
 
 summary(anova_green)
 # Print p-values
-p_value_red
-p_value_green
-p_value_blue
 
 ```
-
-```{r}
-# Running ANOVA for each color
-anova_results <- lapply(1:3, function(i) {
-  color_column <- c("Red", "Green", "Blue")  # Construct column name dynamically
-  formula <- as.formula(paste(color_column, "~ genre"))
-  aov(formula, data = imdb_movies)
-})
-
-# View the summary of the ANOVA results for each color
-anova_summaries <- lapply(anova_results, summary)
-anova_summaries
-
-```
-
 
 # Hypothesis Testing
 
@@ -155,8 +136,7 @@ MSW = \frac{SSW}{n - k} \\
 n - k = \text{number of movies - number of genres}
 $$
 
-**F-Statistic** 
-$$
+**F-Statistic** $$
 \frac{MSB}{MSW}
 $$
 
@@ -187,42 +167,6 @@ ggplot(color_avg, aes(x = First_Genre, y = Average_Value, fill = Color)) +
 
 ```
 
-```{r}
-color_val <- imdb_movies %>%
-  pivot_longer(cols = c(Red, Green, Blue), 
-               names_to = "Color", 
-               values_to = "Value")
-
-color_mapping <- c("Red" = "red", "Green" = "green", "Blue" = "blue")
-
-
-color_val %>%
-  filter(Series_Title == "The Dark Knight") %>% 
-  ggplot(aes(x = Color, y = Value, fill = Color)) + 
-  geom_bar(stat = "identity", width = 1) +
-  coord_polar(theta = "y") +
-  geom_text(aes(label = paste0(round(Value, 1), "%")), 
-            position = position_stack(vjust = 0.5)) + 
-  scale_fill_manual(values = color_mapping) + coord_polar(theta = "y") +
-  labs(title = "Color Distribution for The Dark Knight", 
-       x = "Color", y = "Value") +
-  theme_minimal()
-
-color_val %>%
-  filter(Series_Title == "The Dark Knight") %>% plot_ly(df, labels = ~Category, values = ~Value, type = 'pie', textinfo = 'percent', 
-        text = ~paste0(Category, ": ", round(Value, 1), "%"), 
-        marker = list(colors = RColorBrewer::brewer.pal(5, "Set3"))) %>%
-  layout(
-    title = "Movie Genre Distribution",  # Title for the pie chart
-    showlegend = TRUE  # Display the legend
-  )
-```
-
-```{r}
-test_movie <- data.frame("Spider-Man": 4, "Red": 5)
-
-test_movie
-```
 
 ```{python}
 import pandas as pd
