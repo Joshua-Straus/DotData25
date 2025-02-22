@@ -35,8 +35,6 @@ From this dataset, we will be using the following variable:
 
 # Visualization
 
-
-
 ```{r}
 
 generate_percentages <- function() {
@@ -52,12 +50,101 @@ imdb_movies <- imdb_movies %>%
   mutate(Genres = as.character(Genre)) %>%
   separate(Genres, into = c("First_Genre", "Rest"), sep = ",", extra = "drop", fill = "right")
 
-imdb_movies <- imdb_movies %>% select("First_Genre", "Red", "Green", "Blue", "Series_Title")
+imdb_movies <- imdb_movies %>% select("Series_Title", "Red", "Green", "Blue", "First_Genre")
 
-imdb_movies %>% group_by(First_Genre) %>% summarize(avg_red = mean(Red), avg_green = mean(Green), avg_blue = mean(Blue))
+fake_movies <- imdb_movies %>% group_by(First_Genre) %>% summarize(Red = mean(Red), Green = mean(Green), Blue = mean(Blue))
+
+fake_movies_long <- pivot_longer(fake_movies, 
+                          cols = c(Red, Green, Blue), 
+                          names_to = "Color", 
+                          values_to = "Percentage")
+
+fake_movies_long
 ```
 
-light blue, middle blue, dark blue,
+```{r}
+fake_movies <- imdb_movies %>% group_by(First_Genre) %>% summarize(Red = mean(Red), Green = mean(Green), Blue = mean(Blue))
+
+long_data <- pivot_longer(fake_movies, 
+                          cols = c(Red, Green, Blue), 
+                          names_to = "Color", 
+                          values_to = "Percentage")
+
+fake_movies_long
+
+# Perform ANOVA for Red, Green, Blue and extract p-values
+anova_red <- aov(Percentage ~ First_Genre, data = long_data[long_data$Color == "Red", ])
+anova_green <- aov(Percentage ~ First_Genre, data = long_data[long_data$Color == "Green", ])
+anova_blue <- aov(Percentage ~ First_Genre, data = long_data[long_data$Color == "Blue", ])
+
+summary(anova_green)
+# Print p-values
+
+```
+
+# Hypothesis Testing
+
+### Question: Is there a correlation between the percent of red in a poster and the genre that the movie is in?
+
+$$
+H_0: \mu_{\text{Drama}} = \mu_{\text{Comedy}} \text{ ... } = \mu_{k} \\
+H_{\alpha} = \text{at least 1 } \mu_{i} \neq \mu_{j} \text{ for all i, j}
+$$
+
+### Set the Significance Level
+
+#### $0.05$
+
+### ANOVA Testing
+
+**Total Sum of Squares: SST**
+
+Total variation in the dataset
+
+$$
+SST = \sum_{i=1}^{n} (Y_i - \overline{Y})^2 \\
+Y_i = \text{each individual obervation in the sample} \\
+\overline{Y} = \text{the mean ofobservations in the entire dataset}
+$$
+
+**Sum of Squares Between Groups: SSB**
+
+Variation between genre mean and total dataset mean $$
+SSB = \sum_{j=1}^{k} n_j (\overline{Y_j} - \overline{Y})^2 \\
+n_j = \text{number of observations in genre } j \\
+\overline{Y_j} = \text{mean observations in a genre } j \\
+\overline{Y} = \text{mean of obervations in the entire dataset}
+$$
+
+**Sum of Squares Within Groups: SSW**
+
+Variation within each group $$
+SSW = \sum_{j=1}^{k} \sum_{i=1}^{n_j} (Y_{ij} - \overline{Y_j})^2 \\
+Y_{ij} = \text{each obervation within a group } j \\
+\overline{Y_j} = \text{mean of obervations within a group}
+$$
+
+**Mean Square Between Each Group: MSB**
+
+Mean of squares divided by degrees of freedom for f-distribution $$
+MSB = \frac{SSB}{k -1} \\
+k = \text{number of genres}
+$$
+
+**Mean Square Within Each Group: MSW** $$
+MSW = \frac{SSW}{n - k} \\
+n - k = \text{number of movies - number of genres}
+$$
+
+**F-Statistic** $$
+\frac{MSB}{MSW}
+$$
+
+**P-Value**:
+
+Calculate the likelihood of obtaining a result equal to or less likely than the F-Stat calculated under the F-Distribution
+
+### Results
 
 ```{r}
 
@@ -80,42 +167,6 @@ ggplot(color_avg, aes(x = First_Genre, y = Average_Value, fill = Color)) +
 
 ```
 
-```{r}
-color_val <- imdb_movies %>%
-  pivot_longer(cols = c(Red, Green, Blue), 
-               names_to = "Color", 
-               values_to = "Value")
-
-color_mapping <- c("Red" = "red", "Green" = "green", "Blue" = "blue")
-
-
-color_val %>%
-  filter(Series_Title == "The Dark Knight") %>% 
-  ggplot(aes(x = Color, y = Value, fill = Color)) + 
-  geom_bar(stat = "identity", width = 1) +
-  coord_polar(theta = "y") +
-  geom_text(aes(label = paste0(round(Value, 1), "%")), 
-            position = position_stack(vjust = 0.5)) + 
-  scale_fill_manual(values = color_mapping) + coord_polar(theta = "y") +
-  labs(title = "Color Distribution for The Dark Knight", 
-       x = "Color", y = "Value") +
-  theme_minimal()
-
-color_val %>%
-  filter(Series_Title == "The Dark Knight") %>% plot_ly(df, labels = ~Category, values = ~Value, type = 'pie', textinfo = 'percent', 
-        text = ~paste0(Category, ": ", round(Value, 1), "%"), 
-        marker = list(colors = RColorBrewer::brewer.pal(5, "Set3"))) %>%
-  layout(
-    title = "Movie Genre Distribution",  # Title for the pie chart
-    showlegend = TRUE  # Display the legend
-  )
-```
-
-```{r}
-test_movie <- data.frame("Spider-Man": 4, "Red": 5)
-
-test_movie
-```
 
 ```{python}
 import pandas as pd
@@ -141,10 +192,6 @@ plt.title(f"RGB Color Distribution for {df['Movie Title'][0]}")
 
 plt.show()
 
-```
-
-```{sql connection=imdb_movies_python}
-select * from imdb_movies_python
 ```
 
 $$
