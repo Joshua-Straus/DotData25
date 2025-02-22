@@ -60,7 +60,7 @@ class BitMap:
                     blueDif = (self.mp[row][col].blue - colors[color].pixel.blue)
                     distance = math.sqrt(pow(redDif, 2) + pow(greenDif, 2) + pow(blueDif, 2))
                     distances.append(distance)
-                self.set(colors[distances.index(min(distances))].pixel, row, col)
+                self.set(colors[distances.index(min(distances))], row, col)
                 numOfEachColor[distances.index(min(distances))] += 1
         for i in range(len(numOfEachColor)):
             numOfEachColor[i] = numOfEachColor[i] / (self.width * self.height)
@@ -79,7 +79,7 @@ class BitMap:
         # Populate the NumPy array with the pixel data
         for i in range(height):
             for j in range(width):
-                p = self.mp[i][j]
+                p = self.mp[i][j].pixel
                 image[i, j] = [p.red, p.green, p.blue]
         plt.imshow(image)
         plt.axis("off")  # Hide axes
