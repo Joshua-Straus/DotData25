@@ -1,0 +1,42 @@
+---
+title: "Hackathon Project"
+output: html_document
+date: "2025-02-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+imdb_movies <- read_csv("~/Desktop/Hackathon-Project/imdb_top_1000.csv")
+```
+
+# Introduction
+
+The main goal of a movie poster is to hook an audience into the idea of the movie. It goes without saying then that different genres may have different strategies 
+
+```{python}
+import pandas as pd
+
+imdb_movies_python = pd.read_csv("~/Desktop/Hackathon-Project/imdb_top_1000.csv")
+
+imdb_movies_python
+```
+
+
+```{r}
+imdb_movies
+```
+
+```{r}
+
+```
+
+```{python}
+
+```
+
+```{sql connection=}
+
+```
+
+## 
