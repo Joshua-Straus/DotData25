@@ -1,5 +1,23 @@
-class BitMap:
+import math
+import matplotlib.pyplot as plt
+import numpy as np
 
+class Pixel:
+    def __init__(self, red, green, blue):
+        self.red = red
+        self.green = green
+        self.blue = blue
+    def toString(self):
+        return self.red , self.green , self.blue
+
+class Color:
+    def __init__(self, name, pixel):
+        self.pixel = pixel
+        self.name = name
+
+class BitMap:
+    global colors
+    colors = [Color("Maroon", Pixel(128,0,0)), Color("Red",Pixel(230,25,75)), Color("Pink",Pixel(250,190,212)), Color("Brown",Pixel(170,110,40)), Color("Orange", Pixel(245,130,48)), Color("Apricot", Pixel(255,215,180)), Color("Olive",Pixel(128,128,0)), Color("Yellow",Pixel(255,255,25)), Color("Beige", Pixel(255,250,200)), Color("Lime",Pixel(210,245,60)), Color("Green", Pixel(60,180,75)), Color("Mint", Pixel(170,255,195)), Color("Teal", Pixel(0,128,128)), Color("Cyan", Pixel(70,240,240)), Color("Navy", Pixel(0,0,128)), Color("Blue", Pixel(0,130,200)), Color("Purple", Pixel(145,30,180)), Color("Lavender", Pixel(220,190,255)), Color("Magenta", Pixel(240,50,230)), Color("Black", Pixel(0,0,0)), Color("Grey", Pixel(128,128,128)), Color("White", Pixel(255,255,255))]
     def __init__(self, width, height, name):
         self.width = width
         self.height = height
@@ -30,13 +48,39 @@ class BitMap:
         for i in range(self.getHeight()):
             for j in range(self.getWidth()):
                 print(self.mp[i][j].toString())
+
+    def simplify(self):
+        numOfEachColor = [0] * len(colors)
+        for row in range(self.getHeight()):
+            for col in range(self.getWidth()):
+                distances = []
+                for color in range(len(colors)):
+                    redDif = (self.mp[row][col].red - colors[color].pixel.red)
+                    greenDif = (self.mp[row][col].green - colors[color].pixel.green)
+                    blueDif = (self.mp[row][col].blue - colors[color].pixel.blue)
+                    distance = math.sqrt(pow(redDif, 2) + pow(greenDif, 2) + pow(blueDif, 2))
+                    distances.append(distance)
+                self.set(colors[distances.index(min(distances))].pixel, row, col)
+                numOfEachColor[distances.index(min(distances))] += 1
+        for i in range(len(numOfEachColor)):
+            numOfEachColor[i] = numOfEachColor[i] / (self.width * self.height)
+        return numOfEachColor
     
 
 
-class Pixel:
-    def __init__(self, red, green, blue):
-        self.red = red
-        self.green = green
-        self.blue = blue
-    def toString(self):
-        return self.red , self.green , self.blue
+    def visualize_pixel_array(self):
+        # Determine image dimensions
+        height = len(self.mp)
+        width = len(self.mp[0]) if height > 0 else 0
+
+        # Create a NumPy array for the image data (height x width x 3 for RGB)
+        image = np.zeros((height, width, 3), dtype=np.uint8)
+
+        # Populate the NumPy array with the pixel data
+        for i in range(height):
+            for j in range(width):
+                p = self.mp[i][j]
+                image[i, j] = [p.red, p.green, p.blue]
+        plt.imshow(image)
+        plt.axis("off")  # Hide axes
+        plt.show()

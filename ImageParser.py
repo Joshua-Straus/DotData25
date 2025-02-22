@@ -37,7 +37,9 @@ def ppmToBitMap(ppmFile):
                 startIndex += 3
     return bm
 
-print(ppmToBitMap("test.ppm").printMap())
+bm = ppmToBitMap("output.ppm")
+print(bm.simplify())
+bm.visualize_pixel_array()
 
 
 """
