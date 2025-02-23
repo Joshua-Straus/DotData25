@@ -75,6 +75,7 @@ try:
     df = pd.read_csv("imdb_top_1000.csv", encoding="utf-8")
     for i in range(len(BitMap.colors)):
         df[BitMap.colors[i].name] = None
+    df['Shade'] = None
     for value in df["Poster_Link"]:
         counter += 1
         if (".jpg" in value):
@@ -94,6 +95,7 @@ try:
                 valueList = bm.simplify()
                 for i in range (len(BitMap.colors)):
                     df.loc[counter, BitMap.colors[i].name] = valueList[i]
+                df.loc[counter, 'Shade'] = bm.getGreyValue()
                 print(counter , value)
     df.to_csv("newCSV.csv")
 except FileNotFoundError:

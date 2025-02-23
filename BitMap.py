@@ -65,7 +65,12 @@ class BitMap:
             numOfEachColor[i] = numOfEachColor[i] / (self.width * self.height)
         return numOfEachColor
     
-
+    def getGreyValue(self):
+        totalMagnitude = 0
+        for row in range(self.getHeight()):
+            for col in range(self.getWidth()):
+                totalMagnitude += self.get(row, col).pixel.red + self.get(row, col).pixel.green + self.get(row, col).pixel.blue
+        return totalMagnitude / (3 * self.width * self.height)
 
     def visualize_pixel_array(self):
         # Determine image dimensions
