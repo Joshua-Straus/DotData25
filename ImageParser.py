@@ -5,8 +5,8 @@ from BitMap import BitMap, Pixel, Color
 import csv
 import pandas as pd
 
-#File Author: Joshua Straus
-
+#
+#   Author: Joshua Straus
 #
 #   This File uses a CSV file of the IMDB top 1000 movies, parses the file, converts each JPEG of the movie posters to a PPM file,
 #   converts the PPM file to a simple BitMap, then creates a new CSV file with the color information and shade information of 
@@ -103,22 +103,37 @@ def main():
                     #Bypasses the two faulty links in data set that 
                     if (value == "https://m.media-amazon.com/images/M/MV5BOGQzODdlMDktNzU4ZC00N2M3LWFkYTAtYTM1NTE0ZWI5YTg4XkEyXkFqcGdeQXVyMTA1NTM1NDI2._V1_UX67_CR0,0,67,98_AL_.jpg" or value == "https://m.media-amazon.com/images/M/MV5BMTYxMDk1NTA5NF5BMl5BanBnXkFtZTcwNDkzNzA2NA@@._V1_UX67_CR0,0,67,98_AL_.jpg"):
                         continue
+
+                    #Creates an Image based on bytes
                     image = Image.open(byte_stream)
+
+                    #Converts image to PPM
                     ppmBuffer = BytesIO()
                     image.save(ppmBuffer, format='PPM')
                     ppmBuffer.seek(0)
+
+                    #Creates the BitMap
                     bm = ppmToBitMap(ppmBuffer)
+
+                    #List of color values
                     valueList = bm.simplify()
+
+                    #Adds color values to the data frame
                     for i in range (len(BitMap.colors)):
                         df.loc[counter, BitMap.colors[i].name] = valueList[i]
                     df.loc[counter, 'Shade'] = bm.getGreyValue()
+
+                    #Output for what row it is computing
                     print(counter , value)
+        
+        #Creates the CSV based on data frame
         df.to_csv("newCSV.csv")
     except FileNotFoundError:
         print("File not found")
     except csv.Error as error:
         print(f"CSV Error: {error}")
 
+    #Output for program being completed
     print("Done")
 
 main()
