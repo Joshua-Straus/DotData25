@@ -27,16 +27,23 @@ def ppmToBitMap(ppmFile):
     imageDimensions = file.readline().decode('ascii').strip().split()
     width = int(imageDimensions[0])
     height = int(imageDimensions[1])
-    #max_color
+
+
+    #gets max color of PPM (unused, should all be 255, but important to parse through or else RGB values will be read incorrectly)
     max_color = int(file.readline().decode('ascii').strip())
+
+
     #Creates a new bitmap of a certain dimension
     bm = BitMap(width, height, "Test")
 
     #Gets the String of Bytes from the PPM
     pixels = bytearray(file.read())
 
-    #Loops through a table of the given dimensions
+
+    #Start index for going through 3 byte sequence (will convert to pixels)
     startIndex = 0
+
+    #Loops through a table of the given dimensions
     for row in range(height):
         for col in range(width):
 
@@ -48,10 +55,10 @@ def ppmToBitMap(ppmFile):
                 print("Not enough pixel data")
                 return bm
             
-            #Sets the BitMap pixel at (row, col) to the correct color
+            #Sets the BitMap pixel at (row, col) to the correct color, with a generic name (will later be changed to a simple color)
             r, g, b = currentPixel[0], currentPixel[1], currentPixel[2]
             p = Pixel(r,g,b)
-            bm.set(Color("initial",p), row, col)
+            bm.set(Color("initial color",p), row, col)
 
             #Increases by 3 for each 3-byte pixel
             startIndex += 3
@@ -128,6 +135,7 @@ def main():
         
         #Creates the CSV based on data frame
         df.to_csv("newCSV.csv")
+
     except FileNotFoundError:
         print("File not found")
     except csv.Error as error:
@@ -136,4 +144,5 @@ def main():
     #Output for program being completed
     print("Done")
 
+#Runs Program
 main()
