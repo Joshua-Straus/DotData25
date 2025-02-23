@@ -12,7 +12,7 @@ raw_imdb_movies <- read_csv("~/Desktop/Hackathon-Project2025/newCSV.csv")
 new_movies <- raw_imdb_movies %>% drop_na() %>% 
   mutate(Genre = strsplit(as.character(Genre), ",")) %>%
   unnest(Genre) %>%
-  mutate(Genre = trimws(Genre)) %>% select(Genre, Red, Green, Blue, Maroon, Pink, Brown, Orange, Apricot, Olive, Yellow, Beige, Lime, Mint, Teal, Cyan, Navy, Purple, Lavender, Magenta, Black, Grey, White) %>% 
+  mutate(Genre = trimws(Genre)) %>% select(Genre, Red, Green, Blue, Maroon, Pink, Brown, Orange, Apricot, Olive, Yellow, Beige, Lime, Mint, Teal, Cyan, Navy, Purple, Lavender, Magenta, Black, Grey, White, Shade) %>% 
   drop_na()
 
 long_data <- pivot_longer(new_movies, 
@@ -133,6 +133,7 @@ ggplot(top_colors_per_genre, aes(x = Genre, y = mean_percentage, fill = Color)) 
        y = "Average Percentage",
        fill = "Color")
 
+grouped_movies
 ```
 
 # Hypothesis Testing
@@ -212,41 +213,10 @@ Calculate the likelihood of obtaining a result equal to or less likely than the 
 ### Results
 
 ```{r}
+grouped_movies
 
-
-long_data <- pivot_longer(new_movies, 
-                          cols = -Genre, 
-                          names_to = "Color", 
-                          values_to = "Percentage")
-
-
-colors <- unique(long_data$Color)
-
-
-p_values_list <- list()
-
-for (color in colors) {
-  anova_result <- aov(Percentage ~ Genre, data = subset(long_data, Color == color))
-  p_values_list[[color]] <- summary(anova_result)[[1]]$`Pr(>F)`[1]
-}
-
-
-p_values_df <- as.data.frame(t(as.data.frame(p_values_list)))
-colnames(p_values_df) <- "p_value"
-p_values_df$Color <- rownames(p_values_df)
-
-
-movie_data_with_p_values <- grouped_movies
-
-for (color in colors) {
-  movie_data_with_p_values[[paste0("p_value_", color)]] <- rep(p_values_df[p_values_df$Color == color, "p_value"], nrow(grouped_movies))
-}
-
-
-movie_data_with_p_values %>% select(-Red, -Green, -Blue, -Maroon, -Pink, -Brown, -Orange, -Apricot, -Olive, -Yellow, -Beige, -Lime, -Mint, -Teal, -Cyan, -Navy, -Purple, -Lavender, -Magenta, -Black, -Grey, -White, -Genre) %>% head(1)
-
-significant_data <- new_movies %>% drop_na() %>%
-  select(Genre, Red, Maroon, Orange, Brown, Apricot, Beige, Mint, Purple, Magenta, Black, White)
+significant_data <- grouped_movies %>% drop_na() %>%
+  select(Genre, Red, Maroon, Orange, Brown, Apricot, Beige, Mint, Purple, Magenta, Black, White, Cyan, Navy, Pink, Grey, Olive, Lime)
 
 
 long_significant_data <- pivot_longer(significant_data, cols = -Genre, names_to = "Color", values_to = "Percentage")
@@ -258,7 +228,9 @@ top_genres <- long_significant_data %>%
   arrange(Color, desc(mean_percentage)) %>%
   group_by(Color)
 
+
 top_genres
+significant_data
 ```
 
 The following have significant p-values (less than 0.05):
@@ -283,13 +255,65 @@ The following have significant p-values (less than 0.05):
 
 <li>Black</li>
 
-<li>Magenta</li>
-
 <li>White</li>
 
 </ul>
 
 The strongest mean percentage marked statistically significant is the `Western` genre with the color White. Other strong connections include `Crime` with black, and `Family` with Brown.
+
+```{r}
+lighter_color_data = new_movies %>% 
+  group_by(Genre) %>% 
+  summarize(
+    avg_red = mean(Red), 
+    avg_yellow = mean(Yellow), 
+    avg_green = mean(Green), 
+    avg_blue = mean(Blue)
+  ) %>% 
+  mutate(avg_bright = (avg_red + avg_yellow + avg_blue + avg_green) / 4) %>% 
+  arrange(desc(avg_bright))
+
+
+ggplot(lighter_color_data, aes(x = reorder(Genre, avg_bright), y = avg_bright, fill = avg_bright)) + 
+  geom_col(color = "black", width = 0.7) +
+  scale_fill_gradient(low = "darkblue", high = "yellow") +
+  theme_minimal(base_size = 14) + 
+  labs(
+    title = "Average Vibrancy by Genre",
+    x = "Genre",
+    y = "Vibrancy",
+    fill = "Vibrancy"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.title = element_text(size = 14),
+    plot.title = element_text(size = 16, face = "bold"),
+    legend.position = "right"
+  )
+
+
+lighter_color_data
+
+```
+
+```{r}
+grouped_by_shade = new_movies %>%
+  group_by(Genre) %>%
+  summarize(avg_shade = mean(Shade, na.rm = TRUE))  # Ensure NA values don't cause issues
+
+ggplot(grouped_by_shade, aes(x = reorder(Genre, avg_shade), y = avg_shade, fill = avg_shade)) +
+  geom_col(color = "black") +  # Add black borders for better visibility
+  scale_fill_gradient(low = "black", high = "white") +  # Shade gradient (lighter to darker)
+  theme_minimal(base_size = 15) +  # Clean theme with readable font size
+  labs(title = "Average Shade Level by Genre",
+       x = "Genre",
+       y = "Average Shade",
+       fill = "Shade Level") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  # Tilt labels for readability
+        axis.title = element_text(size = 14), 
+        plot.title = element_text(size = 16, face = "bold"))  
+
+```
 
 ```{r}
 dominant_colors <- top_genres %>%
@@ -320,7 +344,7 @@ ggplot(dominant_colors, aes(x = reorder(Genre, -mean_percentage), y = mean_perce
         legend.title = element_text(size = 13),
         legend.text = element_text(size = 12)) 
 
-
+top_genres
 
 ```
 
@@ -329,11 +353,11 @@ ggplot(dominant_colors, aes(x = reorder(Genre, -mean_percentage), y = mean_perce
 color_mapping <- c("avg_red" = "red", "avg_green" = "green", "avg_blue" = "blue")
 
 
-ggplot(top_genres %>% filter(Color != "Black" & Color != "White"), aes(x = Color, y = Genre, fill = mean_percentage)) +
+ggplot(top_genres %>% filter(Color != "Black" & Color != "White" & Color != "Grey"), aes(x = Color, y = Genre, fill = mean_percentage)) +
   geom_tile(color = "black", size = 0.1) +
   scale_fill_gradient(low = "white", high = "red") + 
-  labs(title = "Heatmap of Significant Colors by Genre 
-       Excluding Black and White",
+  labs(title = "Heatmap of All Colors by Genre 
+       Excluding White, Grey and Black",
        x = "Color",
        y = "Genre") +
   theme_minimal(base_size = 14) +
@@ -385,7 +409,7 @@ color_values = [color_map.get(c) for c in colors]
 plt.figure(figsize=(8, 8))
 
 
-plt.pie(percentages, labels=colors, colors=color_values, startangle=140, textprops={'fontsize': 12, 'color': 'black'}, wedgeprops={'edgecolor': 'black'})
+plt.pie(percentages,colors=color_values, startangle=140, textprops={'fontsize': 12, 'color': 'black'}, wedgeprops={'edgecolor': 'black'})
 
 
 plt.title("Color Distribution in The Dark Knight's Poster", fontsize=16)
@@ -432,39 +456,6 @@ plt.axis('equal')
 plt.show()
 ```
 
-Compared to actual Avatar poster:
+# Refrences
 
-![](https://i.ebayimg.com/00/s/MTYwMFgxMDY2/z/FlgAAOSwEU5jbQ~t/$_57.JPG?set_id=8800005007){width="200"}
-
-```{python}
-gwh = imdb_movies[imdb_movies["Series_Title"] == "Toy Story"].iloc[:, 2:]
-
-# Extract color names and their corresponding values
-colors = gwh.columns
-colors
-percentages = gwh.values.flatten()
-
-# Define actual color codes for better visualization
-color_map = {
-    "Red": "red", "Green": "green", "Blue": "blue", "Yellow": "yellow",
-    "Orange": "orange", "Pink": "pink", "Purple": "purple", "Cyan": "#00FFFF",
-    "Navy": "navy", "Black": "black", "White": "white", "Grey": "grey",
-    "Magenta": "purple", "Beige": "#F5F5DC", "Lime": "lightgreen",
-    "Teal": "lightblue", "Brown": "#A52A2A", "Apricot": "#FFB347",
-    "Olive": "#808000", "Lavender": "#E6E6FA", "Mint": "#98FF98", "Maroon": "darkred"
-}
-
-# Assign matching colors (fallback to gray if missing)
-color_values = [color_map.get(c) for c in colors]
-
-# Plot the pie chart
-plt.figure(figsize=(8, 8))
-
-# Make the pie chart more readable
-plt.pie(percentages, colors=color_values, startangle=140, textprops={'fontsize': 12, 'color': 'black'}, wedgeprops={'edgecolor': 'black'})
-
-# Title and customizations
-plt.title("Color Distribution in Toy Story's Poster", fontsize=16)
-plt.axis('equal')
-plt.show()
-```
+OpenAI. ChatGPT (Feb 2025 Version). OpenAI, 2025, https://openai.com/chatgpt. - Used to clean up code and make cleaner graphs
