@@ -100,7 +100,7 @@ def main():
                         print("Bad")
                         continue
 
-                    #Bypasses the two faulty links in data set that 
+                    #Bypasses the two faulty links in data set that have valid status codes
                     if (value == "https://m.media-amazon.com/images/M/MV5BOGQzODdlMDktNzU4ZC00N2M3LWFkYTAtYTM1NTE0ZWI5YTg4XkEyXkFqcGdeQXVyMTA1NTM1NDI2._V1_UX67_CR0,0,67,98_AL_.jpg" or value == "https://m.media-amazon.com/images/M/MV5BMTYxMDk1NTA5NF5BMl5BanBnXkFtZTcwNDkzNzA2NA@@._V1_UX67_CR0,0,67,98_AL_.jpg"):
                         continue
 
