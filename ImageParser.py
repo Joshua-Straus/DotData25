@@ -1,7 +1,7 @@
 from PIL import Image
 import requests
 from io import BytesIO
-from BitMap import BitMap, Pixel
+from BitMap import BitMap, Pixel, Color
 import csv
 import pandas as pd
 
@@ -27,7 +27,8 @@ def ppmToBitMap(ppmFile):
     imageDimensions = file.readline().decode('ascii').strip().split()
     width = int(imageDimensions[0])
     height = int(imageDimensions[1])
-
+    #max_color
+    max_color = int(file.readline().decode('ascii').strip())
     #Creates a new bitmap of a certain dimension
     bm = BitMap(width, height, "Test")
 
@@ -50,7 +51,7 @@ def ppmToBitMap(ppmFile):
             #Sets the BitMap pixel at (row, col) to the correct color
             r, g, b = currentPixel[0], currentPixel[1], currentPixel[2]
             p = Pixel(r,g,b)
-            bm.set(p, row, col)
+            bm.set(Color("initial",p), row, col)
 
             #Increases by 3 for each 3-byte pixel
             startIndex += 3

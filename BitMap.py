@@ -32,10 +32,10 @@ class BitMap:
     def getHeight(self):
         return self.height
     
-    def set(self, pixel, row, column):
+    def set(self, color, row, column):
         if(column >= self.width or row >= self.height or column < 0 or row < 0):
             return False
-        self.mp[row][column] = pixel
+        self.mp[row][column] = color
         return True
     
     def get(self, row, column):
@@ -49,15 +49,16 @@ class BitMap:
                 print(self.mp[i][j].toString())
 
     def simplify(self):
+        print("ran")
         numOfEachColor = [0] * len(BitMap.colors)
         for row in range(self.getHeight()):
             for col in range(self.getWidth()):
                 distances = []
                 for color in range(len(BitMap.colors)):
-                    redDif = (self.mp[row][col].red - BitMap.colors[color].pixel.red)
-                    greenDif = (self.mp[row][col].green - BitMap.colors[color].pixel.green)
-                    blueDif = (self.mp[row][col].blue - BitMap.colors[color].pixel.blue)
-                    distance = math.sqrt( pow(redDif, 2) + pow(greenDif, 2) + pow(blueDif, 2))
+                    redDif = (self.mp[row][col].pixel.red - BitMap.colors[color].pixel.red)
+                    greenDif = (self.mp[row][col].pixel.green - BitMap.colors[color].pixel.green)
+                    blueDif = (self.mp[row][col].pixel.blue - BitMap.colors[color].pixel.blue)
+                    distance = math.sqrt( redDif**2 + greenDif**2 + blueDif**2 )
                     distances.append(distance)
                 self.set(BitMap.colors[distances.index(min(distances))], row, col)
                 numOfEachColor[distances.index(min(distances))] += 1
@@ -83,8 +84,8 @@ class BitMap:
         # Populate the NumPy array with the pixel data
         for i in range(height):
             for j in range(width):
-                p = self.mp[i][j].pixel
-                image[i, j] = [p.red, p.green, p.blue]
+                p = self.mp[i][j]
+                image[i, j] = [p.pixel.red, p.pixel.green, p.pixel.blue]
         plt.imshow(image)
         plt.axis("off")  # Hide axes
         plt.show()
