@@ -7,8 +7,46 @@ date: "2025-02-22"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-imdb_movies <- read_csv("~/Desktop/Hackathon-Project2025/imdb_top_1000.csv")
+raw_imdb_movies <- read_csv("~/Desktop/Hackathon-Project2025/newCSV.csv")
 
+new_movies <- raw_imdb_movies %>% drop_na() %>% 
+  mutate(Genre = strsplit(as.character(Genre), ",")) %>%
+  unnest(Genre) %>%
+  mutate(Genre = trimws(Genre)) %>% select(Genre, Red, Green, Blue, Maroon, Pink, Brown, Orange, Apricot, Olive, Yellow, Beige, Lime, Mint, Teal, Cyan, Navy, Purple, Lavender, Magenta, Black, Grey, White) %>% 
+  drop_na()
+
+long_data <- pivot_longer(new_movies, 
+                          cols = -Genre, 
+                          names_to = "Color", 
+                          values_to = "Percentage")
+
+colors <- unique(long_data$Color)
+
+
+grouped_movies <- new_movies %>%
+  group_by(Genre) %>%
+  summarize(Red = mean(Red),
+            Green = mean(Green),
+            Blue = mean(Blue),
+            Maroon = mean(Maroon),
+            Pink = mean(Pink),
+            Brown = mean(Brown),
+            Orange = mean(Orange),
+            Apricot = mean(Apricot),
+            Olive = mean(Olive),
+            Yellow = mean(Yellow),
+            Beige = mean(Beige),
+            Lime = mean(Lime),
+            Mint = mean(Mint),
+            Teal = mean(Teal),
+            Cyan = mean(Cyan),
+            Navy = mean(Navy),
+            Purple = mean(Purple),
+            Lavender = mean(Lavender),
+            Magenta = mean(Magenta),
+            Black = mean(Black),
+            Grey = mean(Grey),
+            White = mean(White))
 ```
 
 # Introduction
@@ -21,7 +59,7 @@ In this project, we are using the posters of the top 1000 rated movies on IMDB, 
 
 We collected this data from <a href = "https://www.kaggle.com/datasets/harshitshankhdhar/imdb-dataset-of-top-1000-movies-and-tv-shows?resource=download">Kaggle.com</a> and it was initially compiled straight from the IMDB database 4 years ago.
 
-From this dataset, we will be using the following variable:
+From this dataset, we will be using the following variables:
 
 <ul>
 
@@ -29,118 +67,145 @@ From this dataset, we will be using the following variable:
 
 <li>**Poster_Link**: Link to a jpeg file of the poster of the corresponding movie. We used this to create a program returning the percentages of each color used in the poster</li>
 
+<li>\*\*IMDB_Rating\*\*: Rating on IMDB out of ten to compare to the shade to test a later hypothesis</li>
+
+</ul>
+
+From this dataset, we created the following variable:
+
+<ul>
+
+<li>**Colors (**Red, Green, Blue, Maroon, Pink, Brown, Orange, Apricot, Olive, Yellow, Beige, Lime, Mint, Teal, Cyan, Navy, Purple, Lavender, Magenta, Black, Grey, White): A list of each color we are testing with the value corresponding to the percent of that color found in that poster</li>
+
 </ul>
 
 # Mapping Color from JPEG
 
+Each movie in our data set had a URL that let to a JPEG of its poster. Our first job was to get useful information out of these JPEGs so we had a good set of data for our analysis. We took the following steps to get the color data from each poster:
+
+1.  Scraped the contents of each webpage
+
+2.  Converted each JPEG to the PPM format, a much more readily parsed image format
+
+3.  Converted each PPM to a simple BitMap we made, that housed a table of pixels
+
+4.  Creating a set of 22 simple, distinct, and representative colors of the movie posters
+
+5.  Simplified each BitMap by classifying each pixel into one of the simple colors in our set by using the Euclidean distance between each pixel and each simple color, and setting each pixel to its closest match
+
+6.  Finding the percentages of each simple color in each movie poster and exporting it in a CSV
+
 # Visualization
 
 ```{r}
+# Calculate the mean percentage for each color and genre
+color_means <- long_data %>%
+  group_by(Genre, Color) %>%
+  summarize(mean_percentage = mean(Percentage), .groups = "drop") %>% 
+  filter(Color != "Shade")
 
-generate_percentages <- function() {
-  values <- runif(3)
-  percentages <- values / sum(values) * 100
-  return(percentages)
-}
+# Select the top 4 colors with the highest percentage for each genre
+top_colors_per_genre <- color_means %>% 
+  group_by(Genre) %>%
+  slice_max(order_by = mean_percentage, n = 6) %>%
+  ungroup()
 
-imdb_movies[c("Red", "Green", "Blue")] <- t(replicate(nrow(imdb_movies), generate_percentages()))
+# Define a color mapping for each color name
+color_mapping <- c(
+  "Red" = "red", "Green" = "green", "Blue" = "blue", "Maroon" = "#800000", 
+  "Pink" = "pink", "Brown" = "#A52A2A", "Orange" = "orange", "Apricot" = "#FFB347",
+  "Olive" = "#808000", "Yellow" = "yellow", "Beige" = "#F5F5DC", "Lime" = "green",
+  "Mint" = "#98FF98", "Teal" = "lightblue", "Cyan" = "cyan", "Navy" = "navy",
+  "Purple" = "purple", "Lavender" = "#E6E6FA", "Magenta" = "magenta",
+  "Black" = "black", "Grey" = "grey", "White" = "white"
+)
 
-
-imdb_movies <- imdb_movies %>%
-  mutate(Genres = as.character(Genre)) %>%
-  separate(Genres, into = c("First_Genre", "Rest"), sep = ",", extra = "drop", fill = "right")
-
-imdb_movies <- imdb_movies %>% select("Series_Title", "Red", "Green", "Blue", "First_Genre")
-
-fake_movies <- imdb_movies %>% group_by(First_Genre) %>% summarize(Red = mean(Red), Green = mean(Green), Blue = mean(Blue))
-
-fake_movies_long <- pivot_longer(fake_movies, 
-                          cols = c(Red, Green, Blue), 
-                          names_to = "Color", 
-                          values_to = "Percentage")
-
-fake_movies_long
-```
-
-```{r}
-fake_movies <- imdb_movies %>% group_by(First_Genre) %>% summarize(Red = mean(Red), Green = mean(Green), Blue = mean(Blue))
-
-long_data <- pivot_longer(fake_movies, 
-                          cols = c(Red, Green, Blue), 
-                          names_to = "Color", 
-                          values_to = "Percentage")
-
-fake_movies_long
-
-# Perform ANOVA for Red, Green, Blue and extract p-values
-anova_red <- aov(Percentage ~ First_Genre, data = long_data[long_data$Color == "Red", ])
-anova_green <- aov(Percentage ~ First_Genre, data = long_data[long_data$Color == "Green", ])
-anova_blue <- aov(Percentage ~ First_Genre, data = long_data[long_data$Color == "Blue", ])
-
-summary(anova_green)
-# Print p-values
+# Create a grouped bar chart with actual colors
+ggplot(top_colors_per_genre, aes(x = Genre, y = mean_percentage, fill = Color)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +  # Adds black borders for better visibility
+  scale_fill_manual(values = color_mapping) +  # Apply color mapping
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        axis.title = element_text(size = 14),
+        legend.position = "right") + 
+  labs(title = "Top 6 Average Color Percentages by Genre",
+       x = "Movie Genre",
+       y = "Average Percentage",
+       fill = "Color")
 
 ```
 
 # Hypothesis Testing
 
-### Question: Is there a correlation between the percent of red in a poster and the genre that the movie is in?
+## Question: Is there a correlation between the percent of red in a poster and the genre that the movie is in?
+
+### 
 
 $$
 H_0: \mu_{\text{Drama}} = \mu_{\text{Comedy}} \text{ ... } = \mu_{k} \\
 H_{\alpha} = \text{at least 1 } \mu_{i} \neq \mu_{j} \text{ for all i, j}
 $$
 
-### Set the Significance Level
+## Set the Significance Level
 
-#### $0.05$
+### $0.05$
 
-### ANOVA Testing
+## ANOVA Testing
 
-**Total Sum of Squares: SST**
+### **Total Sum of Squares: SST**
 
 Total variation in the dataset
 
 $$
 SST = \sum_{i=1}^{n} (Y_i - \overline{Y})^2 \\
 Y_i = \text{each individual obervation in the sample} \\
-\overline{Y} = \text{the mean ofobservations in the entire dataset}
+\overline{Y} = \text{the mean of observations in the entire dataset}
 $$
 
-**Sum of Squares Between Groups: SSB**
+### **Sum of Squares Between Groups: SSB**
 
-Variation between genre mean and total dataset mean $$
-SSB = \sum_{j=1}^{k} n_j (\overline{Y_j} - \overline{Y})^2 \\
+Variation between genre mean and total dataset mean
+
+$$
+SSB = \sum_{j=1}^{k} n_j (\overline{Y}_j - \overline{Y})^2 \\
 n_j = \text{number of observations in genre } j \\
 \overline{Y_j} = \text{mean observations in a genre } j \\
 \overline{Y} = \text{mean of obervations in the entire dataset}
 $$
 
-**Sum of Squares Within Groups: SSW**
+### **Sum of Squares Within Groups: SSW**
 
-Variation within each group $$
-SSW = \sum_{j=1}^{k} \sum_{i=1}^{n_j} (Y_{ij} - \overline{Y_j})^2 \\
+Variation within each group
+
+$$
+SSW = \sum_{j=1}^{k} \sum_{i=1}^{n_j} (Y_{ij} - \overline{Y}_j)^2 \\
 Y_{ij} = \text{each obervation within a group } j \\
 \overline{Y_j} = \text{mean of obervations within a group}
 $$
 
-**Mean Square Between Each Group: MSB**
+### **Mean Square Between Each Group: MSB**
 
-Mean of squares divided by degrees of freedom for f-distribution $$
+Mean of squares divided by degrees of freedom for f-distribution
+
+$$
 MSB = \frac{SSB}{k -1} \\
 k = \text{number of genres}
 $$
 
-**Mean Square Within Each Group: MSW** $$
+### **Mean Square Within Each Group: MSW**
+
+$$
 MSW = \frac{SSW}{n - k} \\
 n - k = \text{number of movies - number of genres}
 $$
 
-**F-Statistic** $$
+### **F-Statistic**
+
+$$
 \frac{MSB}{MSW}
 $$
 
-**P-Value**:
+### **P-Value**:
 
 Calculate the likelihood of obtaining a result equal to or less likely than the F-Stat calculated under the F-Distribution
 
@@ -148,54 +213,258 @@ Calculate the likelihood of obtaining a result equal to or less likely than the 
 
 ```{r}
 
-color_avg <- imdb_movies %>%
-  group_by(First_Genre) %>%
-  summarize(avg_red = mean(Red), 
-            avg_green = mean(Green), 
-            avg_blue = mean(Blue)) %>%
-  pivot_longer(cols = c(avg_red, avg_green, avg_blue), 
-               names_to = "Color", 
-               values_to = "Average_Value")
 
-color_mapping <- c("avg_red" = "red", "avg_green" = "green", "avg_blue" = "blue")
+long_data <- pivot_longer(new_movies, 
+                          cols = -Genre, 
+                          names_to = "Color", 
+                          values_to = "Percentage")
 
-ggplot(color_avg, aes(x = First_Genre, y = Average_Value, fill = Color)) +
-  geom_col(position = "dodge") +  scale_fill_manual(values = color_mapping) + 
-  labs(title = "Average RGB Values by Genre", x = "Genre", y = "Average Color Value") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+colors <- unique(long_data$Color)
+
+
+p_values_list <- list()
+
+for (color in colors) {
+  anova_result <- aov(Percentage ~ Genre, data = subset(long_data, Color == color))
+  p_values_list[[color]] <- summary(anova_result)[[1]]$`Pr(>F)`[1]
+}
+
+
+p_values_df <- as.data.frame(t(as.data.frame(p_values_list)))
+colnames(p_values_df) <- "p_value"
+p_values_df$Color <- rownames(p_values_df)
+
+
+movie_data_with_p_values <- grouped_movies
+
+for (color in colors) {
+  movie_data_with_p_values[[paste0("p_value_", color)]] <- rep(p_values_df[p_values_df$Color == color, "p_value"], nrow(grouped_movies))
+}
+
+
+movie_data_with_p_values %>% select(-Red, -Green, -Blue, -Maroon, -Pink, -Brown, -Orange, -Apricot, -Olive, -Yellow, -Beige, -Lime, -Mint, -Teal, -Cyan, -Navy, -Purple, -Lavender, -Magenta, -Black, -Grey, -White, -Genre) %>% head(1)
+
+significant_data <- new_movies %>% drop_na() %>%
+  select(Genre, Red, Maroon, Orange, Brown, Apricot, Beige, Mint, Purple, Magenta, Black, White)
+
+
+long_significant_data <- pivot_longer(significant_data, cols = -Genre, names_to = "Color", values_to = "Percentage")
+
+
+top_genres <- long_significant_data %>%
+  group_by(Color, Genre) %>%
+  summarize(mean_percentage = mean(Percentage), .groups = "drop") %>%
+  arrange(Color, desc(mean_percentage)) %>%
+  group_by(Color)
+
+top_genres
+```
+
+The following have significant p-values (less than 0.05):
+
+<ul>
+
+<li>Red</li>
+
+<li>Maroon</li>
+
+<li>Brown</li>
+
+<li>Orange</li>
+
+<li>Apricot</li>
+
+<li>Beige</li>
+
+<li>Mint</li>
+
+<li>Purple</li>
+
+<li>Black</li>
+
+<li>Magenta</li>
+
+<li>White</li>
+
+</ul>
+
+The strongest mean percentage marked statistically significant is the `Western` genre with the color White. Other strong connections include `Crime` with black, and `Family` with Brown.
+
+```{r}
+dominant_colors <- top_genres %>%
+  group_by(Genre) %>%
+  slice_max(order_by = mean_percentage, n = 1) %>%
+  ungroup()
+
+
+color_map <- c("Red" = "red", "Green" = "green", "Blue" = "blue", "Yellow" = "yellow",
+               "Orange" = "orange", "Pink" = "pink", "Purple" = "purple", "Cyan" = "#00FFFF", 
+               "Navy" = "navy", "Black" = "black", "White" = "white", "Grey" = "grey", 
+               "Magenta" = "purple", "Beige" = "#F5F5DC", "Lime" = "lightgreen", 
+               "Teal" = "lightblue", "Brown" = "#A52A2A", "Apricot" = "#FFB347", 
+               "Olive" = "#808000", "Lavender" = "#E6E6FA", "Mint" = "#98FF98", "Maroon" = "darkred")
+
+
+ggplot(dominant_colors, aes(x = reorder(Genre, -mean_percentage), y = mean_percentage, fill = Color)) +
+  geom_bar(stat = "identity", color = "black", size = 1.2) + 
+  scale_fill_manual(values = color_map) + 
+  theme_minimal(base_size = 15) +
+  labs(title = "Most Dominant Colors",
+       x = "Genre",
+       y = "Color Percentage",
+       fill = "Dominant Color") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 16, face = "bold"),
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 12)) 
+
+
 
 ```
 
+```{r}
+
+color_mapping <- c("avg_red" = "red", "avg_green" = "green", "avg_blue" = "blue")
+
+
+ggplot(top_genres %>% filter(Color != "Black" & Color != "White"), aes(x = Color, y = Genre, fill = mean_percentage)) +
+  geom_tile(color = "black", size = 0.1) +
+  scale_fill_gradient(low = "white", high = "red") + 
+  labs(title = "Heatmap of Significant Colors by Genre 
+       Excluding Black and White",
+       x = "Color",
+       y = "Genre") +
+  theme_minimal(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14), 
+        plot.title = element_text(size = 16, face = "bold"),
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 12))
+
+
+```
 
 ```{python}
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = {'Movie Title': ['Spider-Man'],
-        'Red': [45],
-        'Green': [23],
-        'Blue': [32]}
+raw_imdb_movies = pd.read_csv("~/Desktop/Hackathon-Project2025/newCSV.csv")
 
-df = pd.DataFrame(data)
+imdb_movies = raw_imdb_movies[["Series_Title", "Genre", "Red", "Green", "Blue", "Maroon", "Pink", "Brown", "Orange", "Apricot", "Olive", "Yellow", "Beige", "Lime", "Mint", "Teal", "Cyan", "Navy", "Purple", "Lavender", "Magenta", "Black", "Grey", "White"]]
 
-colors = ['red', 'green', 'blue']
-df_row = df.iloc[0, 1:]
+imdb_movies.loc[:, "Genre"] = imdb_movies["Genre"].str.split(",").str[0]
 
-df_row
+imdb_movies
 
-plt.figure(figsize=(6, 6))
-plt.pie(df_row, labels=df_row.index, colors=colors, autopct='%1.1f%%', startangle=90)
+dark_knight = imdb_movies[imdb_movies["Series_Title"] == "The Dark Knight"].iloc[:, 2:]
+
+dark_knight
 
 
-plt.title(f"RGB Color Distribution for {df['Movie Title'][0]}")
+colors = dark_knight.columns
+colors
+percentages = dark_knight.values.flatten()
 
+
+color_map = {
+    "Red": "red", "Green": "green", "Blue": "blue", "Yellow": "yellow",
+    "Orange": "orange", "Pink": "pink", "Purple": "purple", "Cyan": "#00FFFF",
+    "Navy": "navy", "Black": "black", "White": "white", "Grey": "grey",
+    "Magenta": "purple", "Beige": "#F5F5DC", "Lime": "lightgreen",
+    "Teal": "lightblue", "Brown": "#A52A2A", "Apricot": "#FFB347",
+    "Olive": "#808000", "Lavender": "#E6E6FA", "Mint": "#98FF98"
+}
+
+
+color_values = [color_map.get(c) for c in colors]
+
+
+plt.figure(figsize=(8, 8))
+
+
+plt.pie(percentages, labels=colors, colors=color_values, startangle=140, textprops={'fontsize': 12, 'color': 'black'}, wedgeprops={'edgecolor': 'black'})
+
+
+plt.title("Color Distribution in The Dark Knight's Poster", fontsize=16)
+plt.axis('equal')
 plt.show()
-
 ```
 
-$$
-\Delta C = \sqrt{(rij - rk)^2+(gij-gk)^2 + (bij-bk)^2}
-$$
+Compared to actual The Dark Knight poster:
 
-## 
+<img src="https://m.media-amazon.com/images/I/81IfoBox2TL.jpg" width="300"/>
+
+```{python}
+gwh = imdb_movies[imdb_movies["Series_Title"] == "Avatar"].iloc[:, 2:]
+
+dark_knight
+
+# Extract color names and their corresponding values
+colors = gwh.columns
+colors
+percentages = gwh.values.flatten()
+
+# Define actual color codes for better visualization
+color_map = {
+    "Red": "red", "Green": "green", "Blue": "blue", "Yellow": "yellow",
+    "Orange": "orange", "Pink": "pink", "Purple": "purple", "Cyan": "#00FFFF",
+    "Navy": "navy", "Black": "black", "White": "white", "Grey": "grey",
+    "Magenta": "purple", "Beige": "#F5F5DC", "Lime": "lightgreen",
+    "Teal": "lightblue", "Brown": "#A52A2A", "Apricot": "#FFB347",
+    "Olive": "#808000", "Lavender": "#E6E6FA", "Mint": "#98FF98", "Maroon": "darkred"
+}
+
+# Assign matching colors (fallback to gray if missing)
+color_values = [color_map.get(c) for c in colors]
+
+# Plot the pie chart
+plt.figure(figsize=(8, 8))
+
+# Make the pie chart more readable
+plt.pie(percentages, colors=color_values, startangle=140, textprops={'fontsize': 12, 'color': 'black'}, wedgeprops={'edgecolor': 'black'})
+
+# Title and customizations
+plt.title("Color Distribution in Avatar's Poster", fontsize=16)
+plt.axis('equal')
+plt.show()
+```
+
+Compared to actual Avatar poster:
+
+![](https://i.ebayimg.com/00/s/MTYwMFgxMDY2/z/FlgAAOSwEU5jbQ~t/$_57.JPG?set_id=8800005007){width="200"}
+
+```{python}
+gwh = imdb_movies[imdb_movies["Series_Title"] == "Toy Story"].iloc[:, 2:]
+
+# Extract color names and their corresponding values
+colors = gwh.columns
+colors
+percentages = gwh.values.flatten()
+
+# Define actual color codes for better visualization
+color_map = {
+    "Red": "red", "Green": "green", "Blue": "blue", "Yellow": "yellow",
+    "Orange": "orange", "Pink": "pink", "Purple": "purple", "Cyan": "#00FFFF",
+    "Navy": "navy", "Black": "black", "White": "white", "Grey": "grey",
+    "Magenta": "purple", "Beige": "#F5F5DC", "Lime": "lightgreen",
+    "Teal": "lightblue", "Brown": "#A52A2A", "Apricot": "#FFB347",
+    "Olive": "#808000", "Lavender": "#E6E6FA", "Mint": "#98FF98", "Maroon": "darkred"
+}
+
+# Assign matching colors (fallback to gray if missing)
+color_values = [color_map.get(c) for c in colors]
+
+# Plot the pie chart
+plt.figure(figsize=(8, 8))
+
+# Make the pie chart more readable
+plt.pie(percentages, colors=color_values, startangle=140, textprops={'fontsize': 12, 'color': 'black'}, wedgeprops={'edgecolor': 'black'})
+
+# Title and customizations
+plt.title("Color Distribution in Toy Story's Poster", fontsize=16)
+plt.axis('equal')
+plt.show()
+```
