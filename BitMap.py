@@ -57,7 +57,7 @@ class BitMap:
                     redDif = (self.mp[row][col].red - BitMap.colors[color].pixel.red)
                     greenDif = (self.mp[row][col].green - BitMap.colors[color].pixel.green)
                     blueDif = (self.mp[row][col].blue - BitMap.colors[color].pixel.blue)
-                    distance = math.sqrt(pow(redDif, 2) + pow(greenDif, 2) + pow(blueDif, 2))
+                    distance = math.sqrt( pow(redDif, 2) + pow(greenDif, 2) + pow(blueDif, 2))
                     distances.append(distance)
                 self.set(BitMap.colors[distances.index(min(distances))], row, col)
                 numOfEachColor[distances.index(min(distances))] += 1
